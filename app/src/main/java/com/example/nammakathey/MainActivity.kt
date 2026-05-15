@@ -18,6 +18,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,11 +50,9 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.example.nammakathey.ui.theme.NammaKatheyTheme
-import java.util.Locale
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.pager.HorizontalPager
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import java.util.Locale
 
 // --- Premium Heritage Palette ---
 val HeritageCream = Color(0xFFFAF9F6)
@@ -223,9 +223,9 @@ fun BottomNavigationBar(currentScreen: NavScreen, onNavigate: (NavScreen) -> Uni
             Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
                 val items = listOf(
                     Triple(NavScreen.Map, Icons.Default.Public, "Map"),
-                    Triple(NavScreen.Stories, Icons.AutoMirrored.Filled.AutoStories, "Story"),
-                    Triple(NavScreen.Badges, Icons.Default.AutoAwesome, "Badge"),
-                    Triple(NavScreen.Statues, Icons.Default.LocationOn, "Statue")
+                    Triple(NavScreen.Stories, Icons.AutoMirrored.Filled.AutoStories, "Stories"),
+                    Triple(NavScreen.Badges, Icons.Default.AutoAwesome, "Badges"),
+                    Triple(NavScreen.Statues, Icons.Default.LocationOn, "Statues")
                 )
                 items.forEach { (screen, icon, label) ->
                     val selected = currentScreen == screen
@@ -270,7 +270,7 @@ fun MapScreen(allStories: List<HeroStory>, language: AppLanguage, selectedStory:
                 )
                 Text("|", modifier = Modifier.padding(horizontal = 4.dp), color = HeritageGold)
                 Text(
-                    "ಕನ್ನಡ",
+                    "KN",
                     modifier = Modifier.clickable { onLangToggle(AppLanguage.Kannada) }.padding(4.dp),
                     fontWeight = if (language == AppLanguage.Kannada) FontWeight.Bold else FontWeight.Normal,
                     color = if (language == AppLanguage.Kannada) HeritageMaroon else HeritageGold
@@ -285,7 +285,7 @@ fun MapScreen(allStories: List<HeroStory>, language: AppLanguage, selectedStory:
                 color = HeritageMaroon
             )
             Text(
-                "Explore all 31 districts. Tap a legend to start.",
+                "Discover the legends of 31 districts.",
                 fontSize = 16.sp,
                 color = HeritageBrown.copy(alpha = 0.7f),
                 modifier = Modifier.padding(top = 8.dp)
@@ -319,7 +319,7 @@ fun MapScreen(allStories: List<HeroStory>, language: AppLanguage, selectedStory:
                 }
             }
             Spacer(Modifier.height(24.dp))
-            Text("HERITAGE LEGENDS", color = HeritageGold, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Text("LEGENDARY HEROES", color = HeritageGold, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
             Spacer(Modifier.height(12.dp))
         }
         items(allStories) { story ->
@@ -360,8 +360,8 @@ fun StoriesScreen(
     var showingQuiz by remember { mutableStateOf(false) }
     var isReading by remember { mutableStateOf(false) }
     
-    // reset pager state when story changes
-    val pagerState = rememberPagerState(key = story.id, pageCount = { story.storyPages.size })
+    // reset pager state when hero changes
+    val pagerState = rememberPagerState(initialPage = 0) { story.storyPages.size }
     
     LaunchedEffect(story.id) {
         pagerState.scrollToPage(0)
@@ -489,9 +489,9 @@ fun QuizSection(language: AppLanguage, story: HeroStory, earned: Boolean, onEarn
         if (showResult) {
             Card(colors = CardDefaults.cardColors(containerColor = HeritageOffWhite), shape = RoundedCornerShape(24.dp)) {
                 Column(Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    if (correctCount == 3) {
+                    if (correctCount == story.quizzes.size) {
                         Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = HeritageGold, modifier = Modifier.size(80.dp))
-                        Text("3/3 - Perfect Score!", fontWeight = FontWeight.Bold, color = HeritageMaroon)
+                        Text("Perfect Score!", fontWeight = FontWeight.Bold, color = HeritageMaroon)
                         Text("You've mastered the story of ${story.hero.value(language)}.")
                         Spacer(Modifier.height(24.dp))
                         Button(onClick = { onEarn(); onComplete() }, colors = ButtonDefaults.buttonColors(containerColor = HeritageMaroon)) {
@@ -499,15 +499,17 @@ fun QuizSection(language: AppLanguage, story: HeroStory, earned: Boolean, onEarn
                         }
                     } else {
                         Icon(Icons.Default.Error, contentDescription = null, tint = Color.Red, modifier = Modifier.size(80.dp))
-                        Text("$correctCount/3 Correct", fontWeight = FontWeight.Bold, color = HeritageMaroon)
-                        Text("You need all 3 correct to earn the badge.")
+                        Text("$correctCount/${story.quizzes.size} Correct", fontWeight = FontWeight.Bold, color = HeritageMaroon)
+                        Text("You need all questions correct to earn the badge.")
                         Spacer(Modifier.height(24.dp))
                         Button(onClick = {
                             qIdx = 0
                             selected = null
                             correctCount = 0
                             showResult = false
-                        }) { Text("RETRY QUIZ") }
+                        }, colors = ButtonDefaults.buttonColors(containerColor = HeritageMaroon)) {
+                            Text("RETRY QUIZ")
+                        }
                         TextButton(onClick = onCancel) { Text("BACK TO STORY") }
                     }
                 }
@@ -520,7 +522,7 @@ fun QuizSection(language: AppLanguage, story: HeroStory, earned: Boolean, onEarn
                 elevation = CardDefaults.cardElevation(2.dp)
             ) {
                 Column(Modifier.padding(24.dp)) {
-                    Text("Question ${qIdx + 1} of 3", style = MaterialTheme.typography.labelMedium, color = HeritageGold)
+                    Text("Question ${qIdx + 1} of ${story.quizzes.size}", style = MaterialTheme.typography.labelMedium, color = HeritageGold)
                     Text(quiz.question.value(language), style = MaterialTheme.typography.titleLarge, color = HeritageBrown)
                     Spacer(Modifier.height(24.dp))
                     quiz.options.forEachIndexed { i, opt ->
@@ -552,7 +554,7 @@ fun QuizSection(language: AppLanguage, story: HeroStory, earned: Boolean, onEarn
                             colors = ButtonDefaults.buttonColors(containerColor = HeritageMaroon),
                             shape = CircleShape
                         ) {
-                            Text(if (qIdx < 2) "CONTINUE" else "SEE RESULT")
+                            Text(if (qIdx < story.quizzes.size - 1) "CONTINUE" else "SEE RESULT")
                         }
                     }
                 }
