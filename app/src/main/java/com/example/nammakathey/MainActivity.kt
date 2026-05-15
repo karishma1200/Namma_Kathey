@@ -9,18 +9,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -58,7 +52,6 @@ import java.util.Locale
 val HeritageCream = Color(0xFFFAF9F6)
 val HeritageSandalwood = Color(0xFFF5E6CA)
 val HeritageMaroon = Color(0xFF800000)
-val HeritageMaroonDark = Color(0xFF4A0000)
 val HeritageGold = Color(0xFFC5A059)
 val HeritageBrown = Color(0xFF4E342E)
 val HeritageText = Color(0xFF2C1B18)
@@ -360,8 +353,8 @@ fun StoriesScreen(
     var showingQuiz by remember { mutableStateOf(false) }
     var isReading by remember { mutableStateOf(false) }
     
-    // reset pager state when hero changes
-    val pagerState = rememberPagerState(initialPage = 0) { story.storyPages.size }
+    // reset pager state when story changes
+    val pagerState = rememberPagerState(pageCount = { story.storyPages.size })
     
     LaunchedEffect(story.id) {
         pagerState.scrollToPage(0)
@@ -489,9 +482,9 @@ fun QuizSection(language: AppLanguage, story: HeroStory, earned: Boolean, onEarn
         if (showResult) {
             Card(colors = CardDefaults.cardColors(containerColor = HeritageOffWhite), shape = RoundedCornerShape(24.dp)) {
                 Column(Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    if (correctCount == story.quizzes.size) {
+                    if (correctCount == 3) {
                         Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = HeritageGold, modifier = Modifier.size(80.dp))
-                        Text("Perfect Score!", fontWeight = FontWeight.Bold, color = HeritageMaroon)
+                        Text("3/3 - Perfect Score!", fontWeight = FontWeight.Bold, color = HeritageMaroon)
                         Text("You've mastered the story of ${story.hero.value(language)}.")
                         Spacer(Modifier.height(24.dp))
                         Button(onClick = { onEarn(); onComplete() }, colors = ButtonDefaults.buttonColors(containerColor = HeritageMaroon)) {
@@ -499,17 +492,15 @@ fun QuizSection(language: AppLanguage, story: HeroStory, earned: Boolean, onEarn
                         }
                     } else {
                         Icon(Icons.Default.Error, contentDescription = null, tint = Color.Red, modifier = Modifier.size(80.dp))
-                        Text("$correctCount/${story.quizzes.size} Correct", fontWeight = FontWeight.Bold, color = HeritageMaroon)
-                        Text("You need all questions correct to earn the badge.")
+                        Text("$correctCount/3 Correct", fontWeight = FontWeight.Bold, color = HeritageMaroon)
+                        Text("You need all 3 correct to earn the badge.")
                         Spacer(Modifier.height(24.dp))
                         Button(onClick = {
                             qIdx = 0
                             selected = null
                             correctCount = 0
                             showResult = false
-                        }, colors = ButtonDefaults.buttonColors(containerColor = HeritageMaroon)) {
-                            Text("RETRY QUIZ")
-                        }
+                        }) { Text("RETRY QUIZ") }
                         TextButton(onClick = onCancel) { Text("BACK TO STORY") }
                     }
                 }
@@ -522,7 +513,7 @@ fun QuizSection(language: AppLanguage, story: HeroStory, earned: Boolean, onEarn
                 elevation = CardDefaults.cardElevation(2.dp)
             ) {
                 Column(Modifier.padding(24.dp)) {
-                    Text("Question ${qIdx + 1} of ${story.quizzes.size}", style = MaterialTheme.typography.labelMedium, color = HeritageGold)
+                    Text("Question ${qIdx + 1} of 3", style = MaterialTheme.typography.labelMedium, color = HeritageGold)
                     Text(quiz.question.value(language), style = MaterialTheme.typography.titleLarge, color = HeritageBrown)
                     Spacer(Modifier.height(24.dp))
                     quiz.options.forEachIndexed { i, opt ->
@@ -554,7 +545,7 @@ fun QuizSection(language: AppLanguage, story: HeroStory, earned: Boolean, onEarn
                             colors = ButtonDefaults.buttonColors(containerColor = HeritageMaroon),
                             shape = CircleShape
                         ) {
-                            Text(if (qIdx < story.quizzes.size - 1) "CONTINUE" else "SEE RESULT")
+                            Text(if (qIdx < 2) "CONTINUE" else "SEE RESULT")
                         }
                     }
                 }
@@ -574,7 +565,7 @@ fun BadgesScreen(allStories: List<HeroStory>, language: AppLanguage, badges: Lis
         if (badges.isEmpty()) {
             item {
                 Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
-                    Text("Your legacy awaits. Complete a quiz perfectly to earn a badge.", textAlign = TextAlign.Center, color = HeritageBrown.copy(alpha = 0.5f))
+                    Text("Your legacy awaits. Answer all quiz questions correctly to earn a badge!", textAlign = TextAlign.Center, color = HeritageBrown.copy(alpha = 0.5f))
                 }
             }
         } else {
@@ -633,9 +624,9 @@ fun StatuesScreen(story: HeroStory) {
 fun resolveHeroImage(id: String): Int = when (id) {
     "bagalkot" -> R.drawable.ranna
     "ballari" -> R.drawable.allama_prabhu
-    "belagavi" -> R.drawable.kittur_rani_chennamma
+    "belagavi" -> R.drawable.sangoli_rayanna
     "b_rural" -> R.drawable.kengal_hanumanthaiah
-    "b_urban" -> R.drawable.nadaprabhu_kempegowda
+    "b_urban" -> R.drawable.dr_rajkumar
     "bidar" -> R.drawable.gudleppa_hallikeri
     "chamarajanagar" -> R.drawable.dr_rajkumar
     "chikkaballapura" -> R.drawable.sir_m_visvesvaraya
@@ -652,9 +643,9 @@ fun resolveHeroImage(id: String): Int = when (id) {
     "kolar" -> R.drawable.karnad_sadashiva
     "koppal" -> R.drawable.umabai_kundapur
     "mandya" -> R.drawable.shivakumara
-    "mysuru" -> R.drawable.tipu_sultan
+    "mysuru" -> R.drawable.krishnaraja_wadiyar
     "raichur" -> R.drawable.hardekar_manjappa
-    "ramanagara" -> R.drawable.k_m_cariappa
+    "ramanagara" -> R.drawable.marshal_km_cariappa
     "shivamogga" -> R.drawable.kuvempu
     "tumakuru" -> R.drawable.shivakumara
     "udupi" -> R.drawable.kanakadasa
@@ -662,7 +653,7 @@ fun resolveHeroImage(id: String): Int = when (id) {
     "vijayapura" -> R.drawable.basavanna
     "yadgir" -> R.drawable.akka_mahadevi
     "vijayanagara" -> R.drawable.adi_kavi_pampa
-    else -> R.drawable.kittur_rani_chennamma
+    else -> R.drawable.ranna
 }
 
 fun DrawScope.drawHeritageBackground() {
